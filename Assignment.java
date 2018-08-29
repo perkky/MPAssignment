@@ -21,12 +21,25 @@ public class Assignment
 	{
 		System.loadLibrary("opencv_java330");
 		
-		Mat mat = readImage("prac03ex04img02.png", CvType.CV_8U);
-		Mat n = edgeCannuy(mat);
-		
+		Mat mat = readImage("3.png");
+		Mat n = convertImage(mat, Imgproc.COLOR_BGR2HSV );
+	
 		saveImage(n, "Canny edge7.png");
 		
 		//System.out.println( "mat = " + mat.dump() );
+	}
+
+
+	//converts the current mat file into a different one
+	//eg rgb -> hsv
+	private static Mat convertImage(Mat mat, int type)
+	{
+		Mat dest = new Mat();
+
+		Imgproc.cvtColor(mat, dest, type);
+
+		return dest;
+
 	}
 
 
