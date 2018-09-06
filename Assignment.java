@@ -14,6 +14,9 @@ import java.io.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
+
 
 
 
@@ -36,13 +39,20 @@ public class Assignment
 		//System.out.println(n.get(146,159)[0] + " " + n.get(146,159)[1] + " " + n.get(146,159)[2] + " ");
 		//System.out.println(checkColourHSV(n.get(100,100)));
 
-	
+		
 		//saveImage(n, "Canny edge7.png");
 		
 		//System.out.println( "mat = " + mat.dump() );
 
 		long endTime = System.currentTimeMillis();
 		System.out.println("Took "+(endTime - startTime) + " ms");
+
+		try
+		{
+			showImage(mat, "Original");
+			showImage(convertImage(n, Imgproc.COLOR_HSV2BGR), "New");
+		}
+		catch (Exception e) { System.out.println(e.getMessage()); }
 	}
 
 
@@ -219,4 +229,28 @@ public class Assignment
 			System.out.println("Error saving image: " + location);
 		
 	}
+
+
+
+	//DEBUGGING METHODS
+	//https://stackoverflow.com/questions/27086120/convert-opencv-mat-object-to-bufferedimage
+	private static BufferedImage matToBufferedImage(Mat mat)throws Exception 
+	{        
+		MatOfByte mob=new MatOfByte();
+		Imgcodecs.imencode(".jpg", mat, mob);
+		byte ba[]=mob.toArray();
+
+		BufferedImage bi=ImageIO.read(new ByteArrayInputStream(ba));
+		return bi;
+	}
+
+	private static void showImage(Mat mat,  String title) throws Exception
+	{
+		JLabel image = new JLabel(new ImageIcon(matToBufferedImage(mat)));
+		JFrame frame = new JFrame(title);
+		frame.setSize(mat.cols()+50, mat.rows()+50);
+		frame.setVisible(true);
+		frame.add(image);
+	}
+
 }
