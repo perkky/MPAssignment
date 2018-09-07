@@ -17,7 +17,9 @@ import javax.swing.JFrame;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
-
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 
 public class Assignment
@@ -39,6 +41,9 @@ public class Assignment
 		//System.out.println(n.get(146,159)[0] + " " + n.get(146,159)[1] + " " + n.get(146,159)[2] + " ");
 		//System.out.println(checkColourHSV(n.get(100,100)));
 
+		Mat processed = applyPreprocessingFilters(mat);
+
+		testContours(processed);
 		
 		//saveImage(n, "Canny edge7.png");
 		
@@ -49,12 +54,132 @@ public class Assignment
 
 		try
 		{
-			showImage(mat, "Original");
-			showImage(convertImage(n, Imgproc.COLOR_HSV2BGR), "New");
+			showImage(processed, "Original");
+			//showImage(convertImage(n, Imgproc.COLOR_HSV2BGR), "New");
 		}
 		catch (Exception e) { System.out.println(e.getMessage()); }
 	}
 
+	private static Mat applyPreprocessingFilters(Mat mat)
+	{
+		Mat dest = new Mat();
+		
+		//median filter
+		Imgproc.medianBlur(mat, dest, 3);
+
+		//Gausian blur
+		Imgproc.GaussianBlur(dest, dest, new Size(5,5), 1);
+
+		return dest;
+	}
+
+	private static void testContours(Mat mat)
+	{
+		List<MatOfPoint> contours =  new ArrayList<>();
+		Mat heirachy = new Mat();
+		Mat newMat = new Mat(mat.rows(), mat.cols(), CvType.CV_8UC1);
+		Scalar color = new Scalar(255, 255, 255);
+
+		//find the contours
+		Imgproc.findContours(edgeCanny(mat), contours, heirachy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+		
+		//System.out.println(Arrays.toString(approx.toArray()));
+		//System.out.println(Imgproc.contourArea(approx));
+
+		contours = approxContours(contours); //approx the contours
+		System.out.println();
+		//contours = removeContoursWithParents(contours, heirachy); //remove any contours within a contour //may not be needed
+		contours = removeMOPArea(contours, 10000); //10000 is the minimum as it will be at least 100x100
+
+		//System.out.println(contours.size());
+
+		Imgproc.drawContours(newMat, contours, -1, color, 1);
+		//Imgproc.drawContours(newMat, contours, 1, color, 1);
+		//Imgproc.drawContours(newMat, contours, 2, color, 1);
+
+		
+
+		try {
+		showImage(newMat,"Contours drawn");
+		//showImage(heirachy,"Heirachy drawn");
+		} catch (Exception e) { }
+	}
+
+	//removes any contour that has a parent
+	//This may cause a problem if a a bigger non related contour is present
+	//May need to revise this
+	//May not be needed as you can just fill it in to make a mask
+	private static List<MatOfPoint> removeContoursWithParents(List<MatOfPoint> contours, Mat heirachy)
+	{
+		List<MatOfPoint> newContours = new ArrayList<>();
+
+		int len = contours.size();
+		for (int i = 1; i < len; i++)
+		{
+			if (heirachy.get(0, i)[3] == -1)
+			{
+				newContours.add(contours.get(i));
+			}
+		}
+
+		return newContours;
+	}
+
+	//approximate all contours to polys
+	private static List<MatOfPoint> approxContours(List<MatOfPoint> contours )
+	{
+		double epsilon = 0;
+		
+		List<MatOfPoint> newContours = new ArrayList<>();
+ 		for(MatOfPoint point : contours) 
+		 {
+			//convert from MatOfPoint to MatOfPoint2f
+			//This has to be done as arcLength() and approxPolyDp()
+			//only take MatOfPoint2f, which is pretty much the same thing 
+			//as MatOfPoint
+     		MatOfPoint2f olfPoint2f = new MatOfPoint2f(point.toArray());	//This is the MatOfPoint2f version of the original contour
+			MatOfPoint2f newPoint2f = new MatOfPoint2f();					//This holds the approximated poly of the contour
+			
+
+			epsilon = 0.1*Imgproc.arcLength(olfPoint2f, true);
+			Imgproc.approxPolyDP(olfPoint2f, newPoint2f, epsilon,true);		//approximate the polygons	
+
+			MatOfPoint finalPoint = new MatOfPoint(newPoint2f.toArray());	//This is the MatOfPoint version of the approximated poly.
+
+    		newContours.add(finalPoint);
+		 }
+
+		return newContours;
+	}
+
+
+	//takes away all contours under a certain area
+	private static List<MatOfPoint> removeMOPArea(List<MatOfPoint> contours, int minArea )
+	{
+		List<MatOfPoint> newContours = new ArrayList<>();
+
+		for(MatOfPoint point : contours) 
+		{
+			if (Imgproc.contourArea(point) > minArea)
+			{
+				newContours.add(point);
+			}
+		
+		}
+
+		return newContours;
+	}
+
+
+	//Returns the Canny Edge of the inputted Mat
+	private static Mat edgeCanny(Mat mat)
+	{
+		Mat edges = new Mat();
+		
+		Imgproc.Canny(mat, edges, 100, 200);
+		
+		return edges;
+	}
 
 	//This function gets the average colour inside an isosceles triangle
 	//It does this buy taking the colour of 25 points (5 height positions with 5 width positions per height)
