@@ -4,7 +4,8 @@ import org.opencv.core.CvType;
 import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
- 
+import org.opencv.utils.Converters; 
+
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
@@ -20,44 +21,54 @@ import javax.swing.JLabel;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Scanner;
 
 
 public class Assignment
 {
 	public static void main(String[] args)
 	{
-		long startTime = System.currentTimeMillis();
-
-
-		System.loadLibrary("opencv_java330");
-		
-		Mat mat = readImage(args[0], Imgcodecs.CV_LOAD_IMAGE_COLOR);
-		Mat n = convertImage(mat, Imgproc.COLOR_BGR2HSV );
-
-		System.out.println("Top: " + getColourInTriangle(n, new Point(250, 0), 250, 500) );
-		System.out.println("Bottom: " + getColourInTriangle(n, new Point(250, 500), -250, 500) );
-
-		//System.out.println(mat.get(146,159)[0] + " " + mat.get(146,159)[1] + " " + mat.get(146,159)[2] + " ");	
-		//System.out.println(n.get(146,159)[0] + " " + n.get(146,159)[1] + " " + n.get(146,159)[2] + " ");
-		//System.out.println(checkColourHSV(n.get(100,100)));
-
-		Mat processed = applyPreprocessingFilters(mat);
-
-		testContours(processed);
-		
-		//saveImage(n, "Canny edge7.png");
-		
-		//System.out.println( "mat = " + mat.dump() );
-
-		long endTime = System.currentTimeMillis();
-		System.out.println("Took "+(endTime - startTime) + " ms");
-
-		try
+		for (String arg : args)
 		{
-			showImage(processed, "Original");
-			//showImage(convertImage(n, Imgproc.COLOR_HSV2BGR), "New");
+			long startTime = System.currentTimeMillis();
+
+
+			System.loadLibrary("opencv_java330");
+			
+			
+			Mat mat = readImage(arg, Imgcodecs.CV_LOAD_IMAGE_COLOR);
+			/*-----------used to find image colour---------------------
+			Mat n = convertImage(mat, Imgproc.COLOR_BGR2HSV );
+
+			System.out.println("Top: " + getColourInTriangle(n, new Point(250, 0), 250, 500) );
+			System.out.println("Bottom: " + getColourInTriangle(n, new Point(250, 500), -250, 500) );
+			-----------------------------------------------------------*/
+
+			//System.out.println(mat.get(146,159)[0] + " " + mat.get(146,159)[1] + " " + mat.get(146,159)[2] + " ");	
+			//System.out.println(n.get(146,159)[0] + " " + n.get(146,159)[1] + " " + n.get(146,159)[2] + " ");
+			//System.out.println(checkColourHSV(n.get(100,100)));
+
+			Mat processed = applyPreprocessingFilters(mat);
+
+			testContours(processed);
+			
+			//saveImage(n, "Canny edge7.png");
+			
+			//System.out.println( "mat = " + mat.dump() );
+
+			long endTime = System.currentTimeMillis();
+			System.out.println("Took "+(endTime - startTime) + " ms");
+
+			try
+			{
+				Mat nm= new Mat();
+				Imgproc.resize(processed, nm, new Size(processed.cols()/2,processed.rows()/2));
+				showImage(nm, "Original");
+				//showImage(convertImage(n, Imgproc.COLOR_HSV2BGR), "New");
+			}
+			catch (Exception e) { System.out.println(e.getMessage()); }
+
 		}
-		catch (Exception e) { System.out.println(e.getMessage()); }
 	}
 
 	private static Mat applyPreprocessingFilters(Mat mat)
@@ -76,9 +87,7 @@ public class Assignment
 	private static void testContours(Mat mat)
 	{
 		List<MatOfPoint> contours =  new ArrayList<>();
-		Mat heirachy = new Mat();
-		Mat newMat = new Mat(mat.rows(), mat.cols(), CvType.CV_8UC1);
-		Scalar color = new Scalar(255, 255, 255);
+		Mat heirachy = new Mat();		
 
 		//find the contours
 		Imgproc.findContours(edgeCanny(mat), contours, heirachy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
@@ -87,22 +96,155 @@ public class Assignment
 		//System.out.println(Imgproc.contourArea(approx));
 
 		contours = approxContours(contours); //approx the contours
-		System.out.println();
+		contours = removeMOPArea(contours, 10000); //removes contours with an area less than 10000 - is the minimum as it will be at least 100x100
 		//contours = removeContoursWithParents(contours, heirachy); //remove any contours within a contour //may not be needed
-		contours = removeMOPArea(contours, 10000); //10000 is the minimum as it will be at least 100x100
-
-		//System.out.println(contours.size());
-
-		Imgproc.drawContours(newMat, contours, -1, color, 1);
-		//Imgproc.drawContours(newMat, contours, 1, color, 1);
-		//Imgproc.drawContours(newMat, contours, 2, color, 1);
-
 		
 
-		try {
-		showImage(newMat,"Contours drawn");
-		//showImage(heirachy,"Heirachy drawn");
-		} catch (Exception e) { }
+		for (int i = 0; i < contours.size(); i++)
+		{
+			//create the mask for this specific contour
+			Mat mask = createMask(contours, mat.rows(), mat.cols(), i);
+
+			//extract that shape
+			Mat shapeMat = extractShape(mat, mask, contours.get(i), new Size(500,500));
+
+			//find colour
+			Mat n = convertImage(shapeMat, Imgproc.COLOR_BGR2HSV );
+
+			System.out.println("Top: " + getColourInTriangle(n, new Point(n.cols()/2, 0), n.rows()/2, n.cols()) );
+			System.out.println("Bottom: " + getColourInTriangle(n, new Point(n.cols()/2, n.rows()), -n.rows()/2, n.cols()) );
+
+			try 
+			{
+
+				if (Core.countNonZero(convertImage(shapeMat, Imgproc.COLOR_BGR2GRAY )) > 1)
+					showImage(shapeMat,"Mask Applied");
+
+
+			} catch (Exception e) { }
+
+		}
+
+	}
+
+	//Extracts the shape from an image, warps it into a diamond and returns a Mat
+	//mat - the input image
+	//mask - the mask to be applied to the image before extracting the shape
+	//shape - the coordinates of the shape
+	//size - the size of the mat to be returned (and as such the size of the diamond
+	public static Mat extractShape(Mat mat, Mat mask, MatOfPoint shape, Size size)
+	{
+		Mat maskedMat = new Mat(); 							//The masked image
+		List<Point> sourcePoints = new ArrayList<Point>();	//List of the 4 source points in the original image
+		Mat sP = new Mat();									//The mat version of the source points
+		List<Point> destPoints = new ArrayList<Point>();	//List of the 4 corresponding dest points in the new image
+		Mat dP = new Mat();									//The mat version of the dest points
+		Point[] shapeArray = shape.toArray();				//Array of the shapes points
+		Mat newMat = Mat.zeros((int)size.height, (int)size.width, mat.type());	//The final Mat
+		Mat transformationMatrix = new Mat();				//The transformation matrix
+
+		//Apply the mask
+		mat.copyTo(maskedMat, mask);
+
+		//Fill the source points list from the shape array
+		int i = 0;
+		for (Point point : shapeArray)
+		{
+			sourcePoints.add(new Point(point.x, point.y));
+			i++;
+		}
+
+		//only run if the shape has 4 points
+		if (i == 4)
+		{
+			//converting source points from list to mat
+			sP = Converters.vector_Point2f_to_Mat(sourcePoints); 
+
+			//Create the dest points based on the inputed size
+			destPoints.add(new Point(size.width/2, 0));				//top
+			destPoints.add(new Point(0, size.height/2));			//left
+			destPoints.add(new Point(size.width/2, size.height));	//bottom
+			destPoints.add(new Point(size.width, size.height/2));	//right
+
+			//converting dest points from list to mat
+			dP = Converters.vector_Point2f_to_Mat(destPoints); 
+
+			//calculate the transformatin matrix
+			transformationMatrix = Imgproc.getPerspectiveTransform(sP, dP);
+
+			//apply the transformation matrix
+			Imgproc.warpPerspective(maskedMat, newMat , transformationMatrix, size);
+		}
+
+		return newMat;
+	}
+
+	/*-------------Old Extract shape function-----------------
+	----------this function did not rotate the image---------
+
+	//This function extracts a shape from a mat and returns it
+	//mat - source mat file
+	//mask - mask image to be applied before extraction
+	//shape - shape coordinates
+	public static Mat extractShape(Mat mat, Mat mask, MatOfPoint shape)
+	{
+		Mat maskedMat = new Mat();
+		mat.copyTo(maskedMat, mask);
+		Point[] shapeArray = shape.toArray();
+
+
+		int maxX = 0, maxY = 0, minX = 100000, minY = 100000;
+
+		for (Point point : shapeArray)
+		{
+			//set max and min x
+			if ((int)point.x < minX)
+				minX = (int)point.x;
+			else if ( (int)point.x > maxX)
+				maxX = (int)point.x;
+
+			//set max and min y
+			if ((int)point.y < minY)
+				minY = (int)point.y;
+			else if ((int)point.y > maxY)
+				maxY = (int)point.y;
+		}
+
+		//create the rectangle
+		Rect rect = new Rect(minX, minY , maxX-minX, maxY-minY);
+
+		Mat newMat = new Mat(maskedMat, rect);
+
+		return newMat;
+	}
+	-------------------------------------------------------*/
+
+	//creates a mask from a list of contours
+	//use mat.copyTo(yess, mask) to apply the mask
+	public static Mat createMask(List<MatOfPoint> contours, int rows, int cols)
+	{
+		Mat mask = Mat.zeros(rows, cols, CvType.CV_8UC1); //new Mat(mat.rows(), mat.cols(), CvType.CV_8UC1); - this for some reason would give an image with noise
+		Scalar color = new Scalar(255);
+
+		Imgproc.drawContours(mask, contours, -1, color,  Core.FILLED);
+
+		return mask;
+	}
+
+	//creates a mask from a certain contour
+	public static Mat createMask(List<MatOfPoint> contours, int rows, int cols, int idx)
+	{
+		Mat mask = Mat.zeros(rows, cols, CvType.CV_8UC1); //new Mat(mat.rows(), mat.cols(), CvType.CV_8UC1); - this for some reason would give an image with noise
+		Scalar color = new Scalar(255);
+
+		if (idx >= contours.size())
+		{
+			System.out.println("Unable to properly mask - index is too big");
+		}
+		else
+			Imgproc.drawContours(mask, contours, idx, color,  Core.FILLED);
+
+		return mask;
 	}
 
 	//removes any contour that has a parent
@@ -141,7 +283,7 @@ public class Assignment
 			MatOfPoint2f newPoint2f = new MatOfPoint2f();					//This holds the approximated poly of the contour
 			
 
-			epsilon = 0.1*Imgproc.arcLength(olfPoint2f, true);
+			epsilon = 0.05*Imgproc.arcLength(olfPoint2f, true);
 			Imgproc.approxPolyDP(olfPoint2f, newPoint2f, epsilon,true);		//approximate the polygons	
 
 			MatOfPoint finalPoint = new MatOfPoint(newPoint2f.toArray());	//This is the MatOfPoint version of the approximated poly.
