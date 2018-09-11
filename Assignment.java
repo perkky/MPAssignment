@@ -68,6 +68,9 @@ public class Assignment
 			}
 			catch (Exception e) { System.out.println(e.getMessage()); }
 
+			Scanner sc = new Scanner(System.in);
+			sc.next();
+
 		}
 	}
 
@@ -76,7 +79,7 @@ public class Assignment
 		Mat dest = new Mat();
 		
 		//median filter
-		Imgproc.medianBlur(mat, dest, 3);
+		Imgproc.medianBlur(mat, dest, 5);	//use to be 3 instead of 5
 
 		//Gausian blur
 		Imgproc.GaussianBlur(dest, dest, new Size(5,5), 1);
@@ -91,18 +94,16 @@ public class Assignment
 
 		//find the contours
 		Imgproc.findContours(edgeCanny(mat), contours, heirachy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
-		
-		//System.out.println(Arrays.toString(approx.toArray()));
-		//System.out.println(Imgproc.contourArea(approx));
 
-		contours = approxContours(contours); //approx the contours
-		contours = removeMOPArea(contours, 10000); //removes contours with an area less than 10000 - is the minimum as it will be at least 100x100
+		contours = approxContours(contours); 		//approx the contours
+		contours = removeMOPArea(contours, 10000);  //removes contours with an area less than 10000 - is the minimum as it will be at least 100x100
+		//contours = convertToQuad(contours);			//convert contours to quads - This may cause problems - needs to be tested more
 		//contours = removeContoursWithParents(contours, heirachy); //remove any contours within a contour //may not be needed
-		
 
+		//for each contour
 		for (int i = 0; i < contours.size(); i++)
 		{
-			//create the mask for this specific contour
+			//create the mask for this specific contour to remove the background 
 			Mat mask = createMask(contours, mat.rows(), mat.cols(), i);
 
 			//extract that shape
@@ -110,22 +111,44 @@ public class Assignment
 
 			//find colour
 			Mat n = convertImage(shapeMat, Imgproc.COLOR_BGR2HSV );
-
 			System.out.println("Top: " + getColourInTriangle(n, new Point(n.cols()/2, 0), n.rows()/2, n.cols()) );
 			System.out.println("Bottom: " + getColourInTriangle(n, new Point(n.cols()/2, n.rows()), -n.rows()/2, n.cols()) );
 
+			//DEBUG
 			try 
 			{
 
 				if (Core.countNonZero(convertImage(shapeMat, Imgproc.COLOR_BGR2GRAY )) > 1)
 					showImage(shapeMat,"Mask Applied");
 
-
 			} catch (Exception e) { }
 
 		}
 
 	}
+
+	/*-------------------------Useless?----------------------
+	//used to remove shadows??
+	//still being tested
+	//Useless - delete when finished
+	private static Mat equalizeHist(Mat mat)
+	{
+		Mat yuv = convertImage(mat, Imgproc.COLOR_BGR2YUV);		//yuv version of the image
+		Mat eqDst = new Mat();									//equalized Y component
+
+		//split up the mat into its channels
+		List<Mat> lab_list = new ArrayList(3);
+    	Core.split(yuv,lab_list);
+
+		Imgproc.equalizeHist(lab_list.get(0), eqDst); //equalise the L of LUV
+
+		lab_list.set(0, eqDst);	//update yuv with the equalized L
+
+		Core.merge(lab_list,yuv);
+
+		return convertImage(yuv, Imgproc.COLOR_YUV2BGR);
+	}
+	-----------------------------------------------------------*/
 
 	//Extracts the shape from an image, warps it into a diamond and returns a Mat
 	//mat - the input image
@@ -134,14 +157,14 @@ public class Assignment
 	//size - the size of the mat to be returned (and as such the size of the diamond
 	public static Mat extractShape(Mat mat, Mat mask, MatOfPoint shape, Size size)
 	{
-		Mat maskedMat = new Mat(); 							//The masked image
+		Mat maskedMat = new Mat(); 							//The Mat to store the masked image
 		List<Point> sourcePoints = new ArrayList<Point>();	//List of the 4 source points in the original image
 		Mat sP = new Mat();									//The mat version of the source points
 		List<Point> destPoints = new ArrayList<Point>();	//List of the 4 corresponding dest points in the new image
 		Mat dP = new Mat();									//The mat version of the dest points
 		Point[] shapeArray = shape.toArray();				//Array of the shapes points
-		Mat newMat = Mat.zeros((int)size.height, (int)size.width, mat.type());	//The final Mat
 		Mat transformationMatrix = new Mat();				//The transformation matrix
+		Mat newMat = Mat.zeros((int)size.height, (int)size.width, mat.type());	//The final Mat
 
 		//Apply the mask
 		mat.copyTo(maskedMat, mask);
@@ -150,11 +173,11 @@ public class Assignment
 		int i = 0;
 		for (Point point : shapeArray)
 		{
-			sourcePoints.add(new Point(point.x, point.y));
-			i++;
+				sourcePoints.add(new Point(point.x, point.y));
+				i++;
 		}
 
-		//only run if the shape has 4 points
+		//only run if the shape has 4 points - a quadrilateral
 		if (i == 4)
 		{
 			//converting source points from list to mat
@@ -267,6 +290,65 @@ public class Assignment
 		return newContours;
 	}
 
+	//Converts all contours to quadrilaterals
+	//Removes contours with less than 3 points
+	//This may cause problems - needs to be tested more
+	private static List<MatOfPoint> convertToQuad(List<MatOfPoint> contours)
+	{
+		List<MatOfPoint> newContours = new ArrayList<>();
+		
+
+ 		for(MatOfPoint shape : contours) 
+		 {
+			int topIdx = 0, leftIdx = 0, botIdx = 0, rightIdx = 0;
+			int top = 10000, left = 10000, right = 0, bot = 0;
+
+			Point[] shapeArray = shape.toArray();
+			System.out.println(Arrays.toString(shapeArray));
+			//Removes any shapes with 3 or less verticies 
+			if ( shapeArray.length > 3)
+			{
+				int i = 0;
+				for (Point point : shapeArray)
+				{
+					//see if a new left or right max was made
+					if (point.x < left)
+					{
+						leftIdx = i;
+						left = (int)point.x;
+					}
+					else if ( point.x > right)
+					{
+						rightIdx = i;
+						right = (int)point.x;
+					}
+
+					//see if a new top or bot max was made
+					if (point.y < top)
+					{
+						topIdx = i;
+						top = (int)point.y;
+					}
+					else if ( point.y > bot)
+					{
+						botIdx = i;
+						bot = (int)point.y;
+					}
+
+					i++;
+				}
+
+				Point[] newShapeArray = {shapeArray[topIdx], shapeArray[leftIdx], shapeArray[botIdx], shapeArray[rightIdx]};
+				MatOfPoint newContour = new MatOfPoint(newShapeArray);
+				System.out.println(Arrays.toString(newShapeArray));
+
+				newContours.add(newContour);
+			}
+		 }
+
+		 return newContours;
+	}
+
 	//approximate all contours to polys
 	private static List<MatOfPoint> approxContours(List<MatOfPoint> contours )
 	{
@@ -324,7 +406,7 @@ public class Assignment
 	}
 
 	//This function gets the average colour inside an isosceles triangle
-	//It does this buy taking the colour of 25 points (5 height positions with 5 width positions per height)
+	//It does this buy taking the colour of 20 points (4 height positions with 5 width positions per height)
 	//p1 refers to the top of the triangle
 	//height can be +ve or -ve depending on triangles orientation - +ve id downwards and -ve is upwards
 	private static String getColourInTriangle(Mat mat, Point p1, int height, int width)
@@ -338,12 +420,13 @@ public class Assignment
 			int[] cols = {0, 0, 0, 0, 0, 0, 0};
 			String temp;
 
-			for (int i = 1; i < 6; i++)
+			for (int i = 2; i < 6; i++)
 			{
 				double newWidth = width * i/6;
 				for (int j = 1; j < 6; j++)
 				{
 					temp = checkColourHSV(mat.get( (int)(p1.y + height*i/6), (int)(p1.x - newWidth/2 + newWidth*j/6)) ); //get the colour 
+					//Imgproc.circle(mat, new Point((int)(p1.x - newWidth/2 + newWidth*j/6), (int)(p1.y + height*i/6)), 5, new Scalar(0,255,0),2);//DEBUG - remove
 
 					if (temp.equals("Black"))
 						cols[0]++;
@@ -443,21 +526,12 @@ public class Assignment
 
 	}
 
-
+	//Applys a filter 
 	private static Mat applyFilter2d(Mat mat, Mat kernel)
 	{
 		Mat dest = new Mat();
 		
 		Imgproc.filter2D(mat, dest, -1, kernel);
-		
-		return dest;
-	}
-	
-	private static Mat convertTo(Mat mat, int code)
-	{
-		Mat dest = new Mat();
-		
-		Imgproc.cvtColor(mat, dest, code);
 		
 		return dest;
 	}
@@ -469,7 +543,7 @@ public class Assignment
 		if (!img.empty())
 			System.out.println("Successfully read image: " + location);
 		else
-			throw new IllegalArgumentException("Error reading image: " + location);
+			System.out.println("Error reading image: " + location);
 		return img;
 	}
 	
