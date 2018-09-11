@@ -19,3 +19,4 @@
 //--------------------------------
 javac Assignment.java -classpath opencv-330.jar
 java -cp ".;./opencv-330.jar" Assignment
+Arrays.toString(approx.toArray())
