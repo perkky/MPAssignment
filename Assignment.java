@@ -38,7 +38,7 @@ public class Assignment
 			
 			Mat mat = readImage(arg, Imgcodecs.CV_LOAD_IMAGE_COLOR);
 			/*-----------used to find image colour---------------------
-			Mat n = convertImage(mat, Imgproc.COLOR_BGR2HSV );
+			Mat n = convertImage(mat, ` );
 
 			System.out.println("Top: " + getColourInTriangle(n, new Point(250, 0), 250, 500) );
 			System.out.println("Bottom: " + getColourInTriangle(n, new Point(250, 500), -250, 500) );

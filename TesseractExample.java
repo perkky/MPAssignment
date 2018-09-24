@@ -401,7 +401,7 @@ public class TesseractExample {
 		List<Mat> channels = new ArrayList<Mat>(3);
 		Core.split(mat, channels);
 
-		return channels.get(channel-1);
+		return channels.get(channel);
 	}
 
 	//takes away all contours OVER a certain area
