@@ -8,11 +8,11 @@
 
     Black - Val < 13, Hue and Sat can be anything
     White - Sat < 26, Val > 176 , Hue can be anything
-    Orange - 9 <= Hue < 23
+    Orange - 9 <= Hue < 14
     Red - 0 <= Hue < 9 ,  148 <= Hue <= 180
     Green - 39 <= Hue < 83
     Blue - 83 <= Hue < 148
-    Yellow - 23 <= Hue < 39
+    Yellow - 14 <= Hue < 39
 
 
 
@@ -20,3 +20,7 @@
 javac Assignment.java -classpath opencv-330.jar
 java -cp ".;./opencv-330.jar" Assignment
 Arrays.toString(approx.toArray())
+javac TesseractExample.java -classpath lib\*
+java -cp ".;./*" TesseractExample
+javac Main.java Picture.java FileIO.java Label.java ImgProcessing.java OCR.java -classpath lib\*
+java -cp ".;./lib/*" TesseractExample
