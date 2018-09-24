@@ -50,7 +50,7 @@ public class Assignment
 
 			Mat processed = applyPreprocessingFilters(mat);
 
-			testContours(processed);
+			testContours(mat);
 			
 			//saveImage(n, "Canny edge7.png");
 			
@@ -64,6 +64,7 @@ public class Assignment
 				Mat nm= new Mat();
 				Imgproc.resize(processed, nm, new Size(processed.cols()/2,processed.rows()/2));
 				showImage(nm, "Original");
+
 				//showImage(convertImage(n, Imgproc.COLOR_HSV2BGR), "New");
 			}
 			catch (Exception e) { System.out.println(e.getMessage()); }
@@ -87,8 +88,10 @@ public class Assignment
 		return dest;
 	}
 
-	private static void testContours(Mat mat)
+	private static void testContours(Mat mat1)
 	{
+		Mat mat = applyPreprocessingFilters(mat1); //remove this and replace all mat1 with mat to change to blurred
+
 		List<MatOfPoint> contours =  new ArrayList<>();
 		Mat heirachy = new Mat();		
 
@@ -107,7 +110,7 @@ public class Assignment
 			Mat mask = createMask(contours, mat.rows(), mat.cols(), i);
 
 			//extract that shape
-			Mat shapeMat = extractShape(mat, mask, contours.get(i), new Size(500,500));
+			Mat shapeMat = extractShape(mat1, mask, contours.get(i), new Size(500,500));
 
 			//find colour
 			Mat n = convertImage(shapeMat, Imgproc.COLOR_BGR2HSV );
@@ -119,7 +122,13 @@ public class Assignment
 			{
 
 				if (Core.countNonZero(convertImage(shapeMat, Imgproc.COLOR_BGR2GRAY )) > 1)
+				{
 					showImage(shapeMat,"Mask Applied");
+					//saveImage(shapeMat, "new test " + (i+4) + ".png");
+				}
+
+				//if (Core.countNonZero(convertImage(shapeMat, Imgproc.COLOR_BGR2GRAY )) > 1)
+				//	showImage(edgeCanny(shapeMat),"Mask Applied");
 
 			} catch (Exception e) { }
 
