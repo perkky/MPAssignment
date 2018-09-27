@@ -22,5 +22,5 @@ java -cp ".;./opencv-330.jar" Assignment
 Arrays.toString(approx.toArray())
 javac TesseractExample.java -classpath lib\*
 java -cp ".;./*" TesseractExample
-javac Main.java Picture.java FileIO.java Label.java ImgProcessing.java OCR.java -classpath lib\*
+javac Main.java Picture.java FileIO.java Label.java ImgProcessing.java OCR.java ShapeIdentifier.java -classpath lib\*
 java -cp ".;./lib/*" Main
