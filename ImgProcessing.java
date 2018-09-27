@@ -51,13 +51,29 @@ public class ImgProcessing
 
 	}
 
+	public static Mat invertImage(Mat mat)
+	{
+		Mat dest = Mat.zeros(mat.rows(), mat.cols(), mat.type());
+
+		for (int i = 0; i < mat.cols(); i++)
+		{
+			for (int j = 0; j < mat.rows();j++)
+			{
+				double[] val = {255 - mat.get(j,i)[0]};
+				dest.put(j,i,val);
+			}
+		}
+
+		return dest;
+	}
+
     //Returns the Canny Edge version of an image
     //Contains predetermined presets
     public static Mat edgeCanny(Mat mat)
 	{
 		Mat edges = new Mat();
 		
-		Imgproc.Canny(mat, edges, 100, 200);    //originally 100 and 200
+		Imgproc.Canny(mat, edges, 50, 150);    //originally 100 and 200
 		
 		return edges;
 	}
@@ -85,7 +101,7 @@ public class ImgProcessing
 		Mat newChannel = new Mat();
 		Mat dest = mat.clone();
 
-		int windowSize = 25;
+		int windowSize = 35;
 		int constant = 5;
 
 		Imgproc.adaptiveThreshold(channels.get(channel-1), newChannel, 255, flag, Imgproc.THRESH_BINARY, windowSize, constant);

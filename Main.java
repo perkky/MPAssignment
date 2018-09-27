@@ -20,7 +20,7 @@ public class Main
 
             int maxLabels = 0;
             double maxSigma = 1.0;
-            for (double sigma = 1.0; sigma < 2.5; sigma += 0.05)
+            /*for (double sigma = 1.0; sigma < 2.5; sigma += 0.05)
             {
                 pic.setSigma(sigma);
                 labelsList = pic.getLabels();
@@ -30,7 +30,7 @@ public class Main
                     maxSigma = sigma;
                     maxLabels = labelsList.size();
                 }
-            }
+            }*/
 
             pic.setSigma(maxSigma);
             labelsList = pic.getLabels();

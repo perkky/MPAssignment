@@ -75,9 +75,9 @@ public class Label
             double hue = col[0], sat = col[1], val = col[2];
 
 
-            if (val <= 13)
+            if (val <= 30)//40
                 s = "Black";
-            else if (sat < 26 && val > 176)
+            else if (sat < 75 && val > 176)
                 s = "White";
             else if (9 <= hue && hue < 14 )
                 s = "Orange";
@@ -206,6 +206,7 @@ public class Label
         int channel = 3;
         Mat thresholdImg = ImgProcessing.adaptiveThresholdOnChannel(hsvMat, channel, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C );
         Mat grayThresholdImg = ImgProcessing.threshold(ImgProcessing.getChannel(thresholdImg, channel), 1);
+		Imgproc.dilate(grayThresholdImg, grayThresholdImg, Mat.ones(2,2,grayThresholdImg.type()));
 
         try{
 				FileIO.showImage(grayThresholdImg,"");//DEBUG
@@ -312,7 +313,7 @@ public class Label
                     Mat subtract = new Mat();
                     Core.subtract(uncropperLetters[i], uncropperLetters[j], subtract);
 
-                    if (Core.countNonZero(subtract) < 1)
+                    if (Core.countNonZero(subtract) < 5)
                         erase = true;
                 }
 
@@ -523,14 +524,14 @@ public class Label
 		
 		//if no points were found return a blank mat
         //or if a letter was bigger than 50% of the image
-		if (maxx == -1 || maxy == -1 || minx == 10000 || miny == 10000 || (maxx-minx)*(maxx-minx) > 0.5*mat.rows()*mat.cols())
+		if (maxx == -1 || maxy == -1 || minx == 10000 || miny == 10000 || (maxx-minx)*(maxx-minx) > 0.5*mat.rows()*mat.cols() || maxy-miny < 11 || maxx-minx < 5)
 		{
 			newMat = Mat.zeros(10,10, mat.type());
 		}
 		else
 		{
             //crop the image to just the letter
-			Rect rect = getRect(minx, miny, maxx, maxy, mat.rows(), mat.cols(), 20);
+			Rect rect = getRect(minx, miny, maxx, maxy, mat.rows(), mat.cols(), 10);
 
 			newMat = ImgProcessing.cropImage(image, rect);
 		}
