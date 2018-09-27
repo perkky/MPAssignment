@@ -1,0 +1,190 @@
+private static String getStrings(Mat mat, KeyPoint[] kp, int maxdistX, int maxdistY)
+	{
+		String s = "";
+		ITesseract instance = new Tesseract();  // JNA Interface Mapping
+
+		//holds the letter for each keypoint (index's correspond to each other)
+		String[] letters = new String[kp.length];
+
+		for (int i = 0; i < kp.length; i++)
+		{
+			letters[i] = "";
+
+			Mat testLetter = getLetter(mat, kp[i]);
+			//showImage(testLetter, "test letter");
+
+			try{
+			String current = instance.doOCR(matToBufferedImage(testLetter));
+			if (!current.isEmpty())
+				letters[i] = current.substring(0,1);
+				System.out.println(current);
+				showImage(testLetter, "test letter");
+			}
+			catch (Exception e) { System.out.println(e.getMessage());}
+		}
+
+		Queue<Point> currentLetters = new LinkedList<>();
+		LinkedList<Point> pastLetters = new LinkedList<>();
+
+		//loop until every letter has been visited
+		while (pastLetters.size() != kp.length)
+		{
+			//find the furtherest left letter that hasnt been visited
+			int minx = 10000;
+			int idx = -1;
+			int currIdx = 0;
+			for (KeyPoint p : kp)
+			{
+				if ((int)p.pt.x < minx && !pastLetters.contains(new Point((int)p.pt.x, (int)p.pt.y)))
+				{
+					minx = (int)p.pt.x;
+					idx = currIdx;
+				}
+
+				currIdx++;
+			}
+
+			currentLetters.add(new Point((int)kp[idx].pt.x, (int)kp[idx].pt.y));
+			pastLetters.add(new Point((int)kp[idx].pt.x, (int)kp[idx].pt.y));
+
+			//find all leters that are within max dist from each letter
+			while (currentLetters.size() != 0)
+			{
+				Point currentPoint = currentLetters.remove();
+
+				int i = 0;
+				for (KeyPoint p : kp)
+				{
+					int distX = (int)currentPoint.x - (int)p.pt.x;
+					int distY = (int)currentPoint.y - (int)p.pt.y;
+					//System.out.println(Math.sqrt(distX*distX + distY*distY));
+					if (distX*distX < maxdistX*maxdistX && distY*distY < maxdistY*maxdistY && !pastLetters.contains(new Point((int)p.pt.x, (int)p.pt.y)))
+					{
+						currentLetters.add(new Point((int)p.pt.x, (int)p.pt.y));
+						pastLetters.add(new Point((int)p.pt.x, (int)p.pt.y));
+					}
+					else if (distX == 0 && distY == 0)
+						s += letters[i];
+
+					i++;
+				}
+			}
+			s += '\n';
+		}
+
+		return s;
+	}
+
+private static Mat getLetter(Mat mat, KeyPoint keypoint)
+	{
+		Mat image = Mat.zeros(mat.rows(), mat.cols(), mat.type());
+
+		
+
+		Point pt;
+		Queue<Point> queue = new LinkedList<>();
+		LinkedList<Point> pastPoints = new LinkedList<>();
+		double[] val = {255.0};
+		int minx = 10000, miny = 10000, maxx = -1, maxy = -1;
+
+		//find the closest black pixel to the point
+		if (mat.get((int)keypoint.pt.y, (int)keypoint.pt.x)[0] == 0)
+		{
+			queue.add(new Point((int)keypoint.pt.x, (int)keypoint.pt.y));
+			pastPoints.add(new Point((int)keypoint.pt.x, (int)keypoint.pt.y));
+		}
+		else
+		{
+			int i = 1, j = 1;
+			while (queue.size() == 0)
+			{
+				for (int k = -i; k < i+1; k++)
+				{
+					for (int l = -j; l < j+1; l++)
+					{
+						if (mat.get((int)keypoint.pt.y+l, (int)keypoint.pt.x+k)[0] == 0)
+						{
+							queue.add(new Point((int)keypoint.pt.x+k, (int)keypoint.pt.y+l));
+							pastPoints.add(new Point((int)keypoint.pt.x+k, (int)keypoint.pt.y+l));
+						}
+					}
+				}
+				i++;
+				j++;
+			}
+		}
+
+		//loop through to find all black pixels connected to black pixels
+		while (queue.size() != 0)
+		{
+			pt = queue.remove();
+			//System.out.println(pastPoints.size());
+			image.put((int)pt.y, (int)pt.x, val);
+
+			for (int i = -1; i < 2; i++)
+			{
+				for (int j = -1; j < 2; j++)
+				{
+					if ((int)pt.y+j >-1 && (int)pt.y+j < mat.rows() && (int)pt.x+i >-1 && (int)pt.x+i < mat.cols() )
+					{
+						if (mat.get((int)pt.y+j, (int)pt.x+i)[0] == 0 && !pastPoints.contains(new Point((int)pt.x+i, (int)pt.y+j)))
+						{
+							//set min/max points
+							if ((int)pt.x+i < minx)
+								minx = (int)pt.x+i;
+							else if ((int)pt.x+i > maxx)
+								maxx = (int)pt.x+i;
+							if ((int)pt.y+j < miny)
+								miny = (int)pt.y+j;
+							else if ((int)pt.y+j > maxy)
+								maxy = (int)pt.y+j;
+
+							queue.add(new Point((int)pt.x+i, (int)pt.y+j));
+							pastPoints.add(new Point((int)pt.x+i, (int)pt.y+j));
+						}
+					}
+				}
+			}
+
+			
+			
+		}
+
+		Mat newMat = new Mat();
+
+		
+		//if no points were found return a blank mat
+		if (maxx == -1 || maxy == -1 || minx == 10000 || miny == 10000)
+		{
+			newMat = Mat.zeros(10,10, mat.type());
+		}
+		else
+		{
+			//set boundaries to get a thin boarder around letter
+			int boarder = 20;
+			if (minx > boarder)
+				minx -= boarder;
+			else
+				minx = 0;
+			if (miny >boarder)
+				miny -= boarder;
+			else
+				miny = 0;
+			if (maxx < mat.cols()-boarder-1)
+				maxx += boarder;
+			else
+				maxx = mat.cols()-1;
+			if (maxy < mat.rows()-boarder-1)
+				maxy += boarder;
+			else
+				maxy = mat.rows()-1;
+
+			//create the rectangle
+			Rect rect = new Rect(minx, miny , maxx-minx, maxy-miny);
+
+			newMat = new Mat(image, rect);
+		}
+
+		return newMat;
+
+	}

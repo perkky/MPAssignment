@@ -36,7 +36,7 @@ public class FileIO
 		Mat img = Imgcodecs.imread(location);
 		
 		if (!img.empty())
-			System.out.println("Successfully read image: " + location);
+			;//System.out.println("Successfully read image: " + location);//debug
 		else
 			System.out.println("Error reading image: " + location);
 		return img;

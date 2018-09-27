@@ -20,7 +20,7 @@ public class Main
 
             int maxLabels = 0;
             double maxSigma = 1.0;
-            for (double sigma = 1.0; sigma < 2.5; sigma += 0.05)
+            /*for (double sigma = 1.0; sigma < 2.5; sigma += 0.05)
             {
                 pic.setSigma(sigma);
                 labelsList = pic.getLabels();
@@ -30,7 +30,7 @@ public class Main
                     maxSigma = sigma;
                     maxLabels = labelsList.size();
                 }
-            }
+            }*/
 
             pic.setSigma(maxSigma);
             labelsList = pic.getLabels();
@@ -40,11 +40,13 @@ public class Main
             for (Label label : labelsArray)
             {
                 label.detect();//detect class and text
+                label.detectSymbol();
 
                 System.out.println("Top:\t" + label.getTopColour());
                 System.out.println("Bot:\t" + label.getBotColour());
                 System.out.println("Class:\t" + label.getClassNum());
                 System.out.println("Text:\t" + label.getText());
+                System.out.println("Symbol:\t" + label.getSymbol());
                 System.out.println();
 
                 label.showImage("label");

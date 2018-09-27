@@ -79,13 +79,13 @@ public class ShapeContext
 			Mat mat1 = readImage(arg, CvType.CV_8U);
 			Mat rsz1 = new Mat();
 			Imgproc.resize(mat1,rsz1, new Size(300, 400));
-			Mat mat2 = readImage("Atest2.png", CvType.CV_8U);
+			Mat mat2 = readImage("SetD\\detect.png", CvType.CV_8U);
 			Mat rsz2 = new Mat();
 			Imgproc.resize(mat2,rsz2, new Size(300, 400));
 
 			double avgScore = 0;
 			for (int i = 0; i < 5; i++)
-				avgScore += testSC3D(rsz1, rsz2)/5;
+				avgScore += testSC3D(edgeCanny(rsz1), edgeCanny(rsz2))/5;
 
 			if (avgScore < lowestScore)
 			{
@@ -354,7 +354,7 @@ public class ShapeContext
 
 	}
 
-	private static double testSC3D(Mat mat1, Mat mat2)
+	public static double testSC3D(Mat mat1, Mat mat2)
 	{
 		List<Point> points1 = getPoints(mat1, 5);
 		List<Point> points2 = getPoints(mat2, 5);
@@ -396,7 +396,7 @@ public class ShapeContext
 			}
 		}
 
-		/*
+		
 		//Greedly match points up to minimise cost (greedy minimise that is)
 		int num = 0;
 		boolean[] usedH1 = new boolean[h1.length]; //all initialised to false
@@ -427,7 +427,7 @@ public class ShapeContext
 			usedH1[lowestH1idx] = true;
 			usedH2[lowestH2idx] = true;
 			num++;
-		}*/
+		}/*
 
 
 
@@ -555,7 +555,7 @@ public class ShapeContext
 
 			n++;
 		
-		}
+		}*/
 
 		return totalScore;
 	}
@@ -567,6 +567,7 @@ public class ShapeContext
 		double mean = 0;
 		int num = 0;
 		int total = 0;
+		
 
 		int i = 0;
 		for (Point p1 : points)
@@ -793,6 +794,8 @@ public class ShapeContext
 	{
 		List<Point> points = new ArrayList<>();
 		int maxy = mat.rows(), maxx = mat.cols();
+
+		//try {showImage(mat, "ss");} catch (Exception e) {}
 
 		while (points.size() < 64)
 		{
