@@ -258,9 +258,9 @@ public class Label
 		blobDetector.detect(grayThresholdImg, keypoints);
 
         org.opencv.core.Scalar cores = new org.opencv.core.Scalar(0,0,255);
-        //org.opencv.features2d.Features2d.drawKeypoints(pMat, keypoints, pMat, cores, Features2d.DRAW_RICH_KEYPOINTS  );//DEBUG
+        org.opencv.features2d.Features2d.drawKeypoints(pMat, keypoints, pMat, cores, Features2d.DRAW_RICH_KEYPOINTS  );//DEBUG
 
-        List<DetectedText> detectedTextList = getStrings(grayThresholdImg, keypoints.toArray(), 120, 25);
+        List<DetectedText> detectedTextList = getStrings(grayThresholdImg, keypoints.toArray(), 120, 24);
         DetectedText[] detectedTextArray = detectedTextList.toArray(new DetectedText[0]);
 
         for (DetectedText text : detectedTextArray)
@@ -642,7 +642,7 @@ public class Label
 
 		try
         {
-            FileIO.showImage(cannyMat,"SetD\\detect.png");
+          // FileIO.showImage(cannyMat,"SetD\\detect.png");//DEBUG
         }
         catch (Exception e) { System.out.println(e.getMessage()); 
         }
