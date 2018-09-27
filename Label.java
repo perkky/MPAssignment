@@ -42,6 +42,7 @@ public class Label
     private String pText2 = "";         //second word
     private Point pText1Loc;            //the location of the first word
     private String pClassNum = "(none)";
+	private String pSymbol = "Flame";
 
     public Label(Mat mat)
     {
@@ -197,13 +198,48 @@ public class Label
         public Point getLocation() { return pLocation;}
     }
 
+	//will return the best channel to preform blob detection on
+	//Does this by doing blob detection on both channels, returning the one
+	//that identifies the least amount of blobs
+	public int getBestChannel(Mat hsvMat)
+	{
+		int channel = 3;
+		int minBlobs = 10000;
+		for (int i = 2; i < 4; i++)
+		{
+			Mat thresholdImg = ImgProcessing.adaptiveThresholdOnChannel(hsvMat, i, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C );
+			Mat grayThresholdImg = ImgProcessing.threshold(ImgProcessing.getChannel(thresholdImg, i), 1);
+			Imgproc.dilate(grayThresholdImg, grayThresholdImg, Mat.ones(2,2,grayThresholdImg.type()));
+
+
+			//blob detection
+			FeatureDetector blobDetector = FeatureDetector.create(FeatureDetector.SIMPLEBLOB);
+			MatOfKeyPoint keypoints = new MatOfKeyPoint();
+
+			blobDetector.read("blob.xml");	//reads the properties
+
+			blobDetector.detect(grayThresholdImg, keypoints);
+
+
+			
+			if (keypoints.toArray().length < minBlobs)
+			{
+				minBlobs = keypoints.toArray().length;
+				channel = i;
+			}
+
+		}
+
+		return channel;
+	}
+
     public void detect()
     {
         //convert to hsv
         Mat hsvMat = ImgProcessing.convertImage(pMat, Imgproc.COLOR_BGR2HSV);
 
         //threshold the image
-        int channel = 3;
+        int channel = getBestChannel(hsvMat);
         Mat thresholdImg = ImgProcessing.adaptiveThresholdOnChannel(hsvMat, channel, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C );
         Mat grayThresholdImg = ImgProcessing.threshold(ImgProcessing.getChannel(thresholdImg, channel), 1);
 		Imgproc.dilate(grayThresholdImg, grayThresholdImg, Mat.ones(2,2,grayThresholdImg.type()));
@@ -222,7 +258,7 @@ public class Label
 		blobDetector.detect(grayThresholdImg, keypoints);
 
         org.opencv.core.Scalar cores = new org.opencv.core.Scalar(0,0,255);
-        org.opencv.features2d.Features2d.drawKeypoints(pMat, keypoints, pMat, cores, Features2d.DRAW_RICH_KEYPOINTS  );//DEBUG
+        //org.opencv.features2d.Features2d.drawKeypoints(pMat, keypoints, pMat, cores, Features2d.DRAW_RICH_KEYPOINTS  );//DEBUG
 
         List<DetectedText> detectedTextList = getStrings(grayThresholdImg, keypoints.toArray(), 120, 25);
         DetectedText[] detectedTextArray = detectedTextList.toArray(new DetectedText[0]);
@@ -572,15 +608,68 @@ public class Label
         return pText1 + " " + pText2;
     }
 
-    /*public String getSymbol()
-    {
-        
-    }*/
-
     public String getClassNum()
     {
         return pClassNum;
     }
+
+	public String getSymbol()
+    {
+        return pSymbol;
+    }
+
+	public void detectSymbol()
+	{
+		//make it be able to be processed
+		Mat cannyMat = ImgProcessing.edgeCanny(pMat);
+		double[] val = { 0.0 };
+		for (int i = 0; i < pMat.cols(); i++)
+		{
+			for (int j = 0; j < pMat.cols(); j++)
+			{
+				if (!isInside(250,40,130,190,360,190,i,j))
+					cannyMat.put(j, i, val);
+			}
+		}
+
+		//preform shape context on them
+		ShapeIdentifier si = new ShapeIdentifier(cannyMat, "Symbols\\");
+
+
+		pSymbol = si.findMatch();
+
+
+
+		try
+        {
+            FileIO.showImage(cannyMat,"SetD\\detect.png");
+        }
+        catch (Exception e) { System.out.println(e.getMessage()); 
+        }
+	}
+
+	//https://www.geeksforgeeks.org/check-whether-a-given-point-lies-inside-a-triangle-or-not/
+	boolean isInside(int x1, int y1, int x2, int y2, int x3, int y3, int x, int y) 
+	{    
+		/* Calculate area of triangle ABC */
+		double A = area (x1, y1, x2, y2, x3, y3); 
+		
+		/* Calculate area of triangle PBC */   
+		double A1 = area (x, y, x2, y2, x3, y3); 
+		
+		/* Calculate area of triangle PAC */   
+		double A2 = area (x1, y1, x, y, x3, y3); 
+		
+		/* Calculate area of triangle PAB */    
+		double A3 = area (x1, y1, x2, y2, x, y); 
+			
+		/* Check if sum of A1, A2 and A3 is same as A */ 
+		return (A == A1 + A2 + A3); 
+	} 
+	double area(int x1, int y1, int x2, int y2, int x3, int y3) 
+	{ 
+		return Math.abs( (x1*(y2-y3) + x2*(y3-y1)+ x3*(y1-y2)) /2.0); 
+	} 
 
     //releases mat memory back to the heap
     //who knows why this needs to be done in java
