@@ -560,7 +560,7 @@ public class Label
 		
 		//if no points were found return a blank mat
         //or if a letter was bigger than 50% of the image
-		if (maxx == -1 || maxy == -1 || minx == 10000 || miny == 10000 || (maxx-minx)*(maxx-minx) > 0.5*mat.rows()*mat.cols() || maxy-miny < 11 || maxx-minx < 5)
+		if (maxx == -1 || maxy == -1 || minx == 10000 || miny == 10000 || (maxx-minx)*(maxx-minx) > 0.5*mat.rows()*mat.cols() || maxy-miny < 11 || maxx-minx < 5 || maxy-miny > 90)
 		{
 			newMat = Mat.zeros(10,10, mat.type());
 		}

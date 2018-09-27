@@ -88,7 +88,7 @@ public class ImgProcessing
 		Imgproc.medianBlur(mat, dest, 5);	//use to be 3 instead of 5
 
 		//Gausian blur
-		Imgproc.GaussianBlur(dest, dest, new Size(5,5), sigma); //maybe change to 3? or 1?
+		Imgproc.GaussianBlur(dest, dest, new Size(7,7), sigma); //maybe change to 3? or 1?
 
 		return dest;
 	}
