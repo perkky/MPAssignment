@@ -67,7 +67,6 @@ public class OCR
                     if ((int)newString.charAt(newString.length()-1) > 47 && (int)newString.charAt(newString.length()-1) < 58 ) //replace ' with . as it mistakes the two
                     {
                          newString +=".";
-                         System.out.println("wtf");
                     }
                 }
             }

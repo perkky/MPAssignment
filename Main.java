@@ -19,7 +19,7 @@ public class Main
             List<Label> labelsList = new ArrayList<>();
 
             int maxLabels = 0;
-            double maxSigma = 0;
+            double maxSigma = 1.0;
             /*for (double sigma = 1.0; sigma < 2.5; sigma += 0.05)
             {
                 pic.setSigma(sigma);

@@ -38,10 +38,19 @@ import java.util.Queue;
 public class Label
 {
     private Mat pMat;
-    private String pText1 = "(none)";   //first word
-    private String pText2 = "";         //second word
-    private Point pText1Loc;            //the location of the first word
-    private String pClassNum = "(none)";
+
+	//When channel is 2
+    private String pc2Text1 = "";   //first word
+    private String pc2Text2 = "";         //second word
+    private Point pc2Text1Loc;            //the location of the first word
+    private String pc2ClassNum = "(none)";
+
+	//When channel is 3
+	private String pc3Text1 = "";   //first word
+    private String pc3Text2 = "";         //second word
+    private Point pc3Text1Loc;            //the location of the first word
+    private String pc3ClassNum = "(none)";
+
 	private String pSymbol = "Flame";
 
     public Label(Mat mat)
@@ -233,13 +242,49 @@ public class Label
 		return channel;
 	}
 
+	public List<DetectedText> detectText(Mat hsvMat, boolean inverse)
+	{
+		int channel = 3;
+		 //threshold the image
+
+		Mat thresholdImg = ImgProcessing.adaptiveThresholdOnChannel(hsvMat, channel, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C );
+		Mat grayThresholdImg = ImgProcessing.threshold(ImgProcessing.getChannel(thresholdImg, channel), 1);
+
+		if (inverse)
+		{
+			grayThresholdImg = ImgProcessing.invertImage(grayThresholdImg);
+			Imgproc.dilate(grayThresholdImg, grayThresholdImg, Mat.ones(2,2,grayThresholdImg.type()));
+		}
+		else
+			Imgproc.dilate(grayThresholdImg, grayThresholdImg, Mat.ones(2,2,grayThresholdImg.type()));
+
+        try{
+				FileIO.showImage(grayThresholdImg,"");//DEBUG
+			}
+			catch (Exception e) { }
+
+        //blob detection
+		FeatureDetector blobDetector = FeatureDetector.create(FeatureDetector.SIMPLEBLOB);
+		MatOfKeyPoint keypoints = new MatOfKeyPoint();
+
+		blobDetector.read("blob.xml");	//reads the properties
+
+		blobDetector.detect(grayThresholdImg, keypoints);
+
+        org.opencv.core.Scalar cores = new org.opencv.core.Scalar(0,0,255);
+        //org.opencv.features2d.Features2d.drawKeypoints(pMat, keypoints, pMat, cores, Features2d.DRAW_RICH_KEYPOINTS  );//DEBUG
+
+        return getStrings(grayThresholdImg, keypoints.toArray(), 120, 24);
+	}
+
     public void detect()
     {
         //convert to hsv
         Mat hsvMat = ImgProcessing.convertImage(pMat, Imgproc.COLOR_BGR2HSV);
 
+		/*
         //threshold the image
-        int channel = getBestChannel(hsvMat);
+        int channel = 3;//getBestChannel(hsvMat);
         Mat thresholdImg = ImgProcessing.adaptiveThresholdOnChannel(hsvMat, channel, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C );
         Mat grayThresholdImg = ImgProcessing.threshold(ImgProcessing.getChannel(thresholdImg, channel), 1);
 		Imgproc.dilate(grayThresholdImg, grayThresholdImg, Mat.ones(2,2,grayThresholdImg.type()));
@@ -262,38 +307,80 @@ public class Label
 
         List<DetectedText> detectedTextList = getStrings(grayThresholdImg, keypoints.toArray(), 120, 24);
         DetectedText[] detectedTextArray = detectedTextList.toArray(new DetectedText[0]);
+		*/
+		List<DetectedText> detectedTextList2 = detectText(hsvMat, false);
+		List<DetectedText> detectedTextList3 = detectText(hsvMat, true);
 
-        for (DetectedText text : detectedTextArray)
+		DetectedText[] detectedTextArray2 = detectedTextList2.toArray(new DetectedText[0]);
+		DetectedText[] detectedTextArray3 = detectedTextList3.toArray(new DetectedText[0]);
+
+		//for the second channel
+        for (DetectedText text : detectedTextArray2)
         {
-            if (validTextPosition(text.getLocation()))
+            if (validTextPosition(text.getLocation()) && text.getText().length() > 2 )
             {
                 if (!text.getText().equals("") && !text.getText().equals("O"))
                 {
                     //If no text has been set yet
-                    if (pText1.equals("(none)"))
+                    if (pc2Text1.equals(""))
                     {
-                        pText1 = text.getText();
-                        pText1Loc = text.getLocation();
+                        pc2Text1 = text.getText();
+                        pc2Text1Loc = text.getLocation();
                     }
                     //If a text has been set, compare the positions
                     //The text that is higher will come first
-                    else if (pText2.equals(""))
+                    else if (pc2Text2.equals(""))
                     {
-                        if (pText1Loc.y > text.getLocation().y)
+                        if (pc2Text1Loc.y > text.getLocation().y)
                         {
-                            pText2 = pText1;
-                            pText1 = text.getText();
+                            pc2Text2 = pc2Text1;
+                            pc2Text1 = text.getText();
                         }
                         else
-                            pText2 =  text.getText();
+                            pc2Text2 =  text.getText();
                     }
                     else
-                        pText2 += text.getText();
+                        pc2Text2 += text.getText();
                 }
             }
             else if (validClassPosition(text.getLocation()))
                 if (!text.getText().equals(""))
-                    pClassNum = text.getText();
+                    pc2ClassNum = text.getText();
+
+        }
+
+		//for the first channel
+		for (DetectedText text : detectedTextArray3)
+        {
+            if (validTextPosition(text.getLocation()) && text.getText().length() > 2 )
+            {
+                if (!text.getText().equals("") && !text.getText().equals("O"))
+                {
+                    //If no text has been set yet
+                    if (pc3Text1.equals(""))
+                    {
+                        pc3Text1 = text.getText();
+                        pc3Text1Loc = text.getLocation();
+                    }
+                    //If a text has been set, compare the positions
+                    //The text that is higher will come first
+                    else if (pc3Text2.equals(""))
+                    {
+                        if (pc3Text1Loc.y > text.getLocation().y)
+                        {
+                            pc3Text2 = pc3Text1;
+                            pc3Text1 = text.getText();
+                        }
+                        else
+                            pc3Text2 =  text.getText();
+                    }
+                    else
+                        pc3Text2 += text.getText();
+                }
+            }
+            else if (validClassPosition(text.getLocation()))
+                if (!text.getText().equals(""))
+                    pc3ClassNum = text.getText();
 
         }
         
@@ -366,6 +453,13 @@ public class Label
 		Queue<Integer> currentLetters = new LinkedList<>();
 		LinkedList<Integer> pastLetters = new LinkedList<>();
 
+		//remove any blobs that are blank
+		for (int i = 0; i < kp.length; i++)
+		{
+			if (letters[i].empty())
+				pastLetters.add(i);
+		}
+
 		//loop until every letter has been visited
 		while (pastLetters.size() != kp.length)
 		{
@@ -414,6 +508,8 @@ public class Label
 				}
 			}
 
+			
+
 			int width = 0;
 			int maxHeight = 0;
 			Mat[] ms = currentLetterMats.toArray(new Mat[0]);
@@ -437,39 +533,50 @@ public class Label
 				}
 			}
 
-            //Get the midpoint of the letter
-            Point midpoint = new Point((kp[indexs[indexs.length-1]].pt.x + kp[indexs[0]].pt.x)/2, (kp[indexs[indexs.length-1]].pt.y + kp[indexs[0]].pt.y)/2);
-
-			//create new mat contraining each found letter
-            //Go through once to find the parameters of the new mat
-			for (Mat m : ms ) 
-			{
-				width += m.cols();
-
-				if (m.rows() > maxHeight)
-					maxHeight = m.rows();
-			}
-			Mat currentMat = Mat.zeros(maxHeight, width, mat.type());
 			
-			width = 0;
-			for (Mat m : ms )
+			//Get the midpoint of the letter
+			Point midpoint = new Point((kp[indexs[indexs.length-1]].pt.x + kp[indexs[0]].pt.x)/2, (kp[indexs[indexs.length-1]].pt.y + kp[indexs[0]].pt.y)/2);
+
+
+			//only do this if the word is more than 3 letters
+			if ((validTextPosition(midpoint) && ms.length > 2) ||  (validClassPosition(midpoint) ))//&& ms.length < 4
 			{
-				//m.copyTo(currentMat.submat(0, m.rows()-1, width, width+m.cols()-1));
 
-				for (int i = 0; i < m.cols(); i++)
-					for (int j = 0; j < m.rows(); j++)
-						currentMat.put(j, width +i, m.get(j,i));
+				//create new mat contraining each found letter
+				//Go through once to find the parameters of the new mat
+				for (Mat m : ms ) 
+				{
+					width += m.cols();
 
-				width += m.cols();
+					if (m.rows() > maxHeight)
+						maxHeight = m.rows();
+				}
+				Mat currentMat = Mat.zeros(maxHeight, width, mat.type());
+				
+				width = 0;
+				for (Mat m : ms )
+				{
+					//m.copyTo(currentMat.submat(0, m.rows()-1, width, width+m.cols()-1));
+
+					for (int i = 0; i < m.cols(); i++)
+						for (int j = 0; j < m.rows(); j++)
+							currentMat.put(j, width +i, m.get(j,i));
+
+					width += m.cols();
+				}
+				
+				if ((validTextPosition(midpoint) && ImgProcessing.getNumWhitePixels(currentMat) > 240 ) ||  (validClassPosition(midpoint) && ImgProcessing.getNumWhitePixels(currentMat) > 400 ))
+				{
+
+					//do ocr on this new mat
+					try{
+						FileIO.showImage(currentMat,"");//DEBUG
+						//System.out.println(OCR.doOCR(currentMat)+" "+ midpoint);//DEBUG
+						detectedText.add(new DetectedText(OCR.doOCR(currentMat), midpoint));
+					}
+					catch (Exception e) { }
+				}
 			}
-			
-			//do ocr on this new mat
-			try{
-				FileIO.showImage(currentMat,"");//DEBUG
-                //System.out.println(OCR.doOCR(currentMat)+" "+ midpoint);//DEBUG
-				detectedText.add(new DetectedText(OCR.doOCR(currentMat), midpoint));
-			}
-			catch (Exception e) { }
 		}
 
 		return detectedText;
@@ -520,6 +627,8 @@ public class Label
 		}
 
 		//loop through to find all black pixels that are connected, starting with the first pixel
+		int size = 0;
+		int found = 0;
 		while (queue.size() != 0)
 		{
 
@@ -546,6 +655,15 @@ public class Label
 
 							queue.add(new Point((int)pt.x+i, (int)pt.y+j));
 							visited[(int)(pt.y+j)*mat.cols()+(int)pt.x+i] = 1;
+
+							found++;
+							size++;
+						}
+
+						if (visited[(int)(pt.y+j)*mat.cols()+(int)pt.x+i] != 1)
+						{
+							size++;
+							visited[(int)(pt.y+j)*mat.cols()+(int)pt.x+i] = 1;
 						}
 					}
 				}
@@ -560,7 +678,7 @@ public class Label
 		
 		//if no points were found return a blank mat
         //or if a letter was bigger than 50% of the image
-		if (maxx == -1 || maxy == -1 || minx == 10000 || miny == 10000 || (maxx-minx)*(maxx-minx) > 0.5*mat.rows()*mat.cols() || maxy-miny < 11 || maxx-minx < 5 || maxy-miny > 90)
+		if (maxx == -1 || maxy == -1 || minx == 10000 || miny == 10000 || (maxx-minx)*(maxx-minx) > 0.5*mat.rows()*mat.cols() || maxy-miny < 10 || maxx-minx < 5 )//|| (double)found/(double)size < (double)(maxx-minx)*(maxy-miny)/( (maxx-minx)*(maxy-miny)+450) ) //|| maxy-miny > 90 )
 		{
 			newMat = Mat.zeros(10,10, mat.type());
 		}
@@ -605,13 +723,167 @@ public class Label
 
     public String getText()
     {
-        return pText1 + " " + pText2;
+        return getBestText();
     }
+
+	//compares the text obtained with channel 2 and 3 and 
+	//returns the best text
+	public String getBestText()
+	{
+		boolean c2TextValid = true, c3TextValid = true;
+		String c2Text = pc2Text1 + " " + pc2Text2;
+		String c3Text = pc3Text1 + " " + pc3Text2;
+		String dest = "(none)";
+		int c2numNums = 0;
+		int c3numNums = 0;
+		int c2numLower = 0;
+		int c3numLower = 0;
+
+		//System.out.println(c2Text + " " + c3Text);//DEBUG
+		//A text will be invalid if -
+		//More than 1 space
+		//Less than 3 characters per word
+
+		//Make sure the length is correct
+		if (pc2Text1.length() < 3 || (pc2Text2.length() < 3 && !pc2Text2.equals("")))
+		{
+			c2TextValid = false;
+		}
+		if (pc3Text1.length() < 3 || (pc3Text2.length() < 3 && !pc3Text2.equals("")))
+		{
+			c3TextValid = false;
+		}
+		
+		//check the amount of spaces
+		int spaces = 0;
+		boolean lastCharWasSpace = false;
+		for (int i = 0; i < c2Text.length(); i++)
+		{
+			if (c2Text.charAt(i) == ' ' && !lastCharWasSpace && i != 0)
+				spaces++;
+			
+			if ( (int)c2Text.charAt(i) > 47 && (int)c2Text.charAt(i) < 58 )
+				c2numNums++;
+			else if ( (int)c2Text.charAt(i) > 96 && (int)c2Text.charAt(i) < 123 )
+				c2numLower++;
+		
+			if (c2Text.charAt(i) == ' ')
+				lastCharWasSpace = true;
+			else
+				lastCharWasSpace = false;
+		}
+		if (spaces > 1)
+		{
+			c2TextValid = false;
+		}
+
+		spaces = 0;
+		lastCharWasSpace = false;
+		for (int i = 0; i < c3Text.length(); i++)
+		{
+			if (c3Text.charAt(i) == ' ' && !lastCharWasSpace && i != 0)
+				spaces++;
+
+			if ( (int)c3Text.charAt(i) > 47 && (int)c3Text.charAt(i) < 58 )
+				c3numNums++;
+			else if ( (int)c3Text.charAt(i) > 96 && (int)c3Text.charAt(i) < 123 )
+				c3numLower++;
+			
+			if (c3Text.charAt(i) == ' ')
+				lastCharWasSpace = true;
+			else
+				lastCharWasSpace = false;
+		}
+		if (spaces > 1)
+			c3TextValid = false;
+		
+		//If both are valid, the text with the least amount of numbers is chosen
+		//If it is still equal, the text with the least amount of lowercase letters is then chosen
+		//if its still equal, chose the one with the longest text
+
+		if (c2TextValid && !c3TextValid)
+			dest = c2Text;
+		else if (c3TextValid && !c2TextValid)
+			dest = c3Text;
+		else if (c2TextValid && c3TextValid)
+		{
+			if (c2numLower > c3numLower)
+				dest = c3Text;
+			else if (c3numLower > c2numLower)
+				dest = c2Text;
+			else
+			{
+				if (c2numNums > c3numNums)
+					dest = c3Text;
+				else if (c3numNums > c2numNums)
+					dest = c2Text;
+				else
+				{
+					if (c2Text.length() > c3Text.length())
+						dest = c2Text;
+					else
+						dest = c3Text;
+				}
+			}
+				
+		}
+
+		return dest;
+	}
 
     public String getClassNum()
     {
-        return pClassNum;
+        return getBestClassNum();
     }
+
+	public String getBestClassNum()
+	{
+		boolean c2ClassValid = true, c3ClassValid = true;
+		String c2Class = pc2ClassNum;
+		String c3Class = pc3ClassNum;
+		String dest = "(none)";
+
+		//System.out.println(c2Class + " " + c3Class);//DEBUG
+		//if its empty or greater than 3 characters, its invalid
+		if (c2Class.length() > 3 || c2Class.equals(""))
+			c2ClassValid = false;
+		if (c3Class.length() > 3 || c3Class.equals(""))
+			c3ClassValid = false;
+
+		//if it has any letter its invalid
+		for (int i = 0; i < c2Class.length(); i++)
+		{
+			if ( ((int)c2Class.charAt(i) < 48 || (int)c2Class.charAt(i) > 57) && (int)c2Class.charAt(i) != '.')
+			{
+				c2ClassValid = false;
+			}
+		}
+
+		for (int i = 0; i < c3Class.length(); i++)
+		{
+			if ( ((int)c3Class.charAt(i) < 48 || (int)c3Class.charAt(i) > 57) && (int)c3Class.charAt(i) != '.')
+			{
+				c3ClassValid = false;
+			}
+		}
+
+		if (c2ClassValid && !c3ClassValid)
+			dest = c2Class;
+		else if (c3ClassValid && !c2ClassValid)
+			dest = c3Class;
+		else if (c2ClassValid && c3ClassValid)
+		{
+			//give lower priority to 2 digit numbers over 1 or 3 digit numbers
+			if (c2Class.length() != 1 || c2Class.length() != 3)
+				dest = c3Class;
+			else if (c3Class.length() != 1 || c3Class.length() != 3)
+				dest = c2Class;
+			else
+				dest = c3Class;
+		}
+
+		return dest;
+	}
 
 	public String getSymbol()
     {

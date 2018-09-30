@@ -51,6 +51,19 @@ public class ImgProcessing
 
 	}
 
+	//Gets the amount of white pixels in the inputted mat
+	public static int getNumWhitePixels(Mat mat)
+	{
+		int num = 0;
+
+		for (int i = 0; i < mat.cols(); i++)
+			for (int j = 0; j < mat.rows(); j++)
+				if (mat.get(j,i)[0] == 255)
+					num++;
+
+		return num;
+	}
+
 	public static Mat invertImage(Mat mat)
 	{
 		Mat dest = Mat.zeros(mat.rows(), mat.cols(), mat.type());
