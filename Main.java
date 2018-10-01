@@ -8,6 +8,7 @@ public class Main
     public static void main(String args[])
     {
         System.loadLibrary("opencv_java330");
+        long startTime = System.currentTimeMillis();
 
         for (String arg : args)
         {
@@ -20,7 +21,7 @@ public class Main
 
             int maxLabels = 0;
             double maxSigma = 1.0;
-            /*for (double sigma = 1.0; sigma < 2.5; sigma += 0.05)
+            for (double sigma = 0.0; sigma < 2.5; sigma += 0.25)
             {
                 pic.setSigma(sigma);
                 labelsList = pic.getLabels();
@@ -30,7 +31,7 @@ public class Main
                     maxSigma = sigma;
                     maxLabels = labelsList.size();
                 }
-            }*/
+            }
 
             pic.setSigma(maxSigma);
             labelsList = pic.getLabels();
@@ -49,14 +50,18 @@ public class Main
                 System.out.println("Symbol:\t" + label.getSymbol());
                 System.out.println();
 
-                label.showImage("label");
+                //label.showImage("label");
 
                 label.release();
             }
             
             Scanner sc = new Scanner(System.in);
-            sc.next();
+            //sc.next();
         }
+
+        long endTime = System.currentTimeMillis();
+        System.out.println("Took "+ (endTime - startTime) + " ms total");
+		System.out.println("Took "+(endTime - startTime)/args.length + " ms per image");
     }
 
 }

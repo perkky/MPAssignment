@@ -64,6 +64,64 @@ public class ImgProcessing
 		return num;
 	}
 
+	
+	public static int getLongestVerticalLine(Mat mat)
+	{
+		int longest = 0;
+
+		for (int j = 0 ; j < mat.rows(); j++)
+		{
+			int curLongest = 0;
+			for (int i = 0; i < mat.cols(); i++)
+			{
+				if (mat.get(j,i)[0] == 255)
+					curLongest++;
+				else if (mat.get(j,i)[0] == 0)
+				{
+					if (curLongest > longest)
+						longest = curLongest;
+
+					curLongest = 0;
+				}
+			}
+
+			if (curLongest > longest)
+				longest = curLongest;
+
+			curLongest = 0;
+		}
+
+		return longest;
+	}
+	public static int getLongestHorizontalLine(Mat mat)
+	{
+		int longest = 0;
+
+		for (int j = 0 ; j < mat.cols(); j++)
+		{
+			int curLongest = 0;
+			for (int i = 0; i < mat.rows(); i++)
+			{
+				if (mat.get(i,j)[0] == 255)
+					curLongest++;
+				else if (mat.get(i,j)[0] == 0)
+				{
+					if (curLongest > longest)
+						longest = curLongest;
+
+					curLongest = 0;
+				}
+			}
+
+			if (curLongest > longest)
+				longest = curLongest;
+
+			curLongest = 0;
+		}
+
+		return longest;
+	}
+
 	public static Mat invertImage(Mat mat)
 	{
 		Mat dest = Mat.zeros(mat.rows(), mat.cols(), mat.type());

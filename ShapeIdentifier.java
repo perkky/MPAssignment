@@ -53,7 +53,7 @@ public class ShapeIdentifier
                 for (int i = 0; i < 15; i++)
 				      avgScore += compareShapes(pMat, ImgProcessing.edgeCanny(test))/15;
 
-				if (avgScore < minAvg)
+				if (avgScore < minAvg && avgScore >= 0.0)
 				{
 					minAvg = avgScore;
 					name = file.getName();
@@ -69,6 +69,9 @@ public class ShapeIdentifier
 		List<Point> points1 = getPoints(mat1, 0);
 		List<Point> points2 = getPoints(mat2, 0);
 
+		if (points1.size() != 64)
+			return -1;
+
 		double[][][] h1 = getSCValue3D(points1);
 		double[][][] h2 = getSCValue3D(points2);
 		
@@ -83,6 +86,7 @@ public class ShapeIdentifier
 	{
 		List<Point> points = new ArrayList<>();
 		int maxy = mat.rows(), maxx = mat.cols();
+		int count = 0;
 
 		while (points.size() < 64)
 		{
@@ -112,6 +116,10 @@ public class ShapeIdentifier
 					points.add(new Point(x,y));
 
 			}
+
+			count++;
+			if (count > 10000 && points.size() == 0)
+				break;
 
 
 		}

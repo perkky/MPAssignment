@@ -254,12 +254,13 @@ public class Label
 		{
 			grayThresholdImg = ImgProcessing.invertImage(grayThresholdImg);
 			Imgproc.dilate(grayThresholdImg, grayThresholdImg, Mat.ones(2,2,grayThresholdImg.type()));
+			Imgproc.medianBlur(grayThresholdImg, grayThresholdImg, 3);//DEBUG - not sure if should keep or not - needs testing
 		}
 		else
 			Imgproc.dilate(grayThresholdImg, grayThresholdImg, Mat.ones(2,2,grayThresholdImg.type()));
 
         try{
-				FileIO.showImage(grayThresholdImg,"");//DEBUG
+				//FileIO.showImage(grayThresholdImg,"");//DEBUG
 			}
 			catch (Exception e) { }
 
@@ -391,7 +392,7 @@ public class Label
     private boolean validTextPosition(Point p)
     {
         boolean flag = false;
-        Rect rect = new Rect(78, 193, 336, 131);
+        Rect rect = new Rect(37, 193, 424, 131);//78,193,336,131
         if (rect.contains(p))
             flag = true;
 
@@ -447,6 +448,25 @@ public class Label
                     uncropperLetters[i] = Mat.zeros(1, 1, letters[i].type());
                 }
             }
+
+			//make sure is valid
+			if (!validTextPosition(kp[i].pt) && !validClassPosition(kp[i].pt))
+			{
+				letters[i] = Mat.zeros(1, 1, letters[i].type());
+                uncropperLetters[i] = Mat.zeros(1, 1, letters[i].type());
+			}
+			else if (validClassPosition(kp[i].pt) && ImgProcessing.getNumWhitePixels(letters[i]) < 350 )
+			{
+				double ratio = (double)ImgProcessing.getLongestVerticalLine(letters[i])/(double)ImgProcessing.getLongestHorizontalLine(letters[i]);
+
+				//only if its not a square, delete it
+				if (ratio < 0.9 || ratio > 1.1)
+				{
+					letters[i] = Mat.zeros(1, 1, letters[i].type());
+					uncropperLetters[i] = Mat.zeros(1, 1, letters[i].type());
+				}
+			}
+			
 
 		}
 		
@@ -570,7 +590,7 @@ public class Label
 
 					//do ocr on this new mat
 					try{
-						FileIO.showImage(currentMat,"");//DEBUG
+						//FileIO.showImage(currentMat,"");//DEBUG
 						//System.out.println(OCR.doOCR(currentMat)+" "+ midpoint);//DEBUG
 						detectedText.add(new DetectedText(OCR.doOCR(currentMat), midpoint));
 					}
@@ -678,7 +698,7 @@ public class Label
 		
 		//if no points were found return a blank mat
         //or if a letter was bigger than 50% of the image
-		if (maxx == -1 || maxy == -1 || minx == 10000 || miny == 10000 || (maxx-minx)*(maxx-minx) > 0.5*mat.rows()*mat.cols() || maxy-miny < 10 || maxx-minx < 5 )//|| (double)found/(double)size < (double)(maxx-minx)*(maxy-miny)/( (maxx-minx)*(maxy-miny)+450) ) //|| maxy-miny > 90 )
+		if (maxx == -1 || maxy == -1 || minx == 10000 || miny == 10000 || (maxx-minx)*(maxx-minx) > 0.5*mat.rows()*mat.cols() || maxy-miny < 10 || maxx-minx < 5 || maxy-miny > 100 )//|| (double)found/(double)size < (double)(maxx-minx)*(maxy-miny)/( (maxx-minx)*(maxy-miny)+450) ) //|| maxy-miny > 90 )
 		{
 			newMat = Mat.zeros(10,10, mat.type());
 		}
@@ -914,7 +934,7 @@ public class Label
 
 		try
         {
-           FileIO.showImage(cannyMat,"SetD\\detect.png");//DEBUG
+           //FileIO.showImage(cannyMat,"SetD\\detect.png");//DEBUG
         }
         catch (Exception e) { System.out.println(e.getMessage()); 
         }
