@@ -37,12 +37,21 @@ public class Main
             labelsList = pic.getLabels();
             Label[] labelsArray = labelsList.toArray(new Label[0]);
 
+            for (int i = 0; i < labelsArray.length; i++)
+            {
+                labelsArray[i].setThreadName(Integer.toString(i));
+                labelsArray[i].start();
+            }
+
+            //make sure all the multithreading is finished
+            for (Label label : labelsArray)
+            {
+                while (!label.finished) { }
+            }
+
             System.out.println(arg);
             for (Label label : labelsArray)
             {
-                label.detect();//detect class and text
-                label.detectSymbol();
-
                 System.out.println("Top:\t" + label.getTopColour());
                 System.out.println("Bot:\t" + label.getBotColour());
                 System.out.println("Class:\t" + label.getClassNum());
@@ -50,9 +59,9 @@ public class Main
                 System.out.println("Symbol:\t" + label.getSymbol());
                 System.out.println();
 
-                //label.showImage("label");
+                label.showImage("label");
 
-                label.release();
+                //label.release();
             }
             
             Scanner sc = new Scanner(System.in);

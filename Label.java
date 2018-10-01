@@ -35,8 +35,12 @@ import java.io.PrintWriter;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class Label
+public class Label extends Thread
 {
+	private Thread pThread;				//the thread
+	private String pThreadName;
+	public boolean finished = false;
+
     private Mat pMat;
 
 	//When channel is 2
@@ -52,6 +56,29 @@ public class Label
     private String pc3ClassNum = "(none)";
 
 	private String pSymbol = "Flame";
+
+	/*********Multithreading*************/
+	public void start()
+	{
+		if (pThread == null)
+		{
+			pThread = new Thread(this, pThreadName);
+			pThread.start();
+		}
+	}
+	public void run()
+	{
+		detect();//detect class and text
+        detectSymbol();
+		try{ Thread.sleep(20); } catch (Exception e) { System.out.println(e.getMessage()); }
+		
+		finished = true;
+	}
+	public void setThreadName(String name)
+	{
+		pThreadName = name;
+	}
+
 
     public Label(Mat mat)
     {
@@ -89,9 +116,9 @@ public class Label
                 s = "Black";
             else if (sat < 75 && val > 176)
                 s = "White";
-            else if (9 <= hue && hue < 14 )
+            else if (7 <= hue && hue < 14 )
                 s = "Orange";
-            else if ((0 <= hue && 9 > hue) || (148 <= hue && hue <= 180))
+            else if ((0 <= hue && 7 > hue) || (148 <= hue && hue <= 180))
                 s = "Red";
             else if ( 39 <= hue && 83 > hue)
                 s = "Green";
@@ -206,41 +233,6 @@ public class Label
         public String getText() { return pText; }
         public Point getLocation() { return pLocation;}
     }
-
-	//will return the best channel to preform blob detection on
-	//Does this by doing blob detection on both channels, returning the one
-	//that identifies the least amount of blobs
-	public int getBestChannel(Mat hsvMat)
-	{
-		int channel = 3;
-		int minBlobs = 10000;
-		for (int i = 2; i < 4; i++)
-		{
-			Mat thresholdImg = ImgProcessing.adaptiveThresholdOnChannel(hsvMat, i, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C );
-			Mat grayThresholdImg = ImgProcessing.threshold(ImgProcessing.getChannel(thresholdImg, i), 1);
-			Imgproc.dilate(grayThresholdImg, grayThresholdImg, Mat.ones(2,2,grayThresholdImg.type()));
-
-
-			//blob detection
-			FeatureDetector blobDetector = FeatureDetector.create(FeatureDetector.SIMPLEBLOB);
-			MatOfKeyPoint keypoints = new MatOfKeyPoint();
-
-			blobDetector.read("blob.xml");	//reads the properties
-
-			blobDetector.detect(grayThresholdImg, keypoints);
-
-
-			
-			if (keypoints.toArray().length < minBlobs)
-			{
-				minBlobs = keypoints.toArray().length;
-				channel = i;
-			}
-
-		}
-
-		return channel;
-	}
 
 	public List<DetectedText> detectText(Mat hsvMat, boolean inverse)
 	{
@@ -592,7 +584,8 @@ public class Label
 					try{
 						//FileIO.showImage(currentMat,"");//DEBUG
 						//System.out.println(OCR.doOCR(currentMat)+" "+ midpoint);//DEBUG
-						detectedText.add(new DetectedText(OCR.doOCR(currentMat), midpoint));
+						OCR ocr = new OCR();
+						detectedText.add(new DetectedText(ocr.doOCR(currentMat), midpoint));
 					}
 					catch (Exception e) { }
 				}
@@ -919,7 +912,7 @@ public class Label
 		{
 			for (int j = 0; j < pMat.cols(); j++)
 			{
-				if (!isInside(250,40,130,190,360,190,i,j))
+				if (!isInside(250,40,130,190,360,190,i,j))//130->115, 360->385
 					cannyMat.put(j, i, val);
 			}
 		}
@@ -934,7 +927,7 @@ public class Label
 
 		try
         {
-           //FileIO.showImage(cannyMat,"SetD\\detect.png");//DEBUG
+           FileIO.showImage(cannyMat,"SetD\\detect.png");//DEBUG
         }
         catch (Exception e) { System.out.println(e.getMessage()); 
         }

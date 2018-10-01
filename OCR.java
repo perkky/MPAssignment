@@ -38,9 +38,14 @@ import java.util.Queue;
 
 public class OCR
 {
-    private static ITesseract instance = new Tesseract();
+    private ITesseract instance;
 
-    public static String doOCR(Mat mat)
+    public OCR()
+    {
+        instance = new Tesseract();
+    }
+
+    public String doOCR(Mat mat)
     {
         //instance.setTessVariable("tessedit_char_whitelist", "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-'");
         String s = "";
@@ -53,7 +58,7 @@ public class OCR
     }
 
     //Cleans the text up by removing any non standard characters
-    public static String cleanTextUp(String s)
+    public String cleanTextUp(String s)
     {
         String newString = "";
 
