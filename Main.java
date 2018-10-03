@@ -44,22 +44,30 @@ public class Main
             }
 
             //make sure all the multithreading is finished
-            for (Label label : labelsArray)
+            for (int i = 0; i < labelsArray.length; i++)
             {
-                while (!label.finished) { }
+				try {
+				while (!labelsArray[i].finished) { Thread.sleep(20);} 
+				} catch (Exception e) {}
             }
 
             System.out.println(arg);
             for (Label label : labelsArray)
             {
-                System.out.println("Top:\t" + label.getTopColour());
-                System.out.println("Bot:\t" + label.getBotColour());
-                System.out.println("Class:\t" + label.getClassNum());
-                System.out.println("Text:\t" + label.getText());
-                System.out.println("Symbol:\t" + label.getSymbol());
-                System.out.println();
+                if (!label.getSymbol().equals(""))
+                {
+                    System.out.println("Top:\t" + label.getTopColour());
+                    System.out.println("Bot:\t" + label.getBotColour());
+                    System.out.println("Class:\t" + label.getClassNum());
+                    System.out.println("Text:\t" + SanityCheck.sanityCheckText(label.getText(), "dictionary.data"));//label.getText());  
+                    System.out.println("Symbol:\t" + SanityCheck.sanityCheckSymbol(label.getSymbol(), "symbols.data"));
+                    System.out.println();
+                }
 
-                label.showImage("label");
+                //System.out.println(OCR.sanityCheck(label.getText(), "words.txt"));
+                //System.out.println(label.getText());
+
+                //label.showImage("label");
 
                 //label.release();
             }

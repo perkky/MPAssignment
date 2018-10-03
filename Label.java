@@ -35,6 +35,7 @@ import java.io.PrintWriter;
 import java.util.LinkedList;
 import java.util.Queue;
 
+
 public class Label extends Thread
 {
 	private Thread pThread;				//the thread
@@ -918,7 +919,7 @@ public class Label extends Thread
 		}
 
 		//preform shape context on them
-		ShapeIdentifier si = new ShapeIdentifier(cannyMat, "Symbols\\");
+		ShapeIdentifier si = new ShapeIdentifier(cannyMat, "Symbols/");
 
 
 		pSymbol = si.findMatch();
@@ -927,7 +928,7 @@ public class Label extends Thread
 
 		try
         {
-           FileIO.showImage(cannyMat,"SetD\\detect.png");//DEBUG
+           //FileIO.showImage(cannyMat,"SetD\\detect.png");//DEBUG
         }
         catch (Exception e) { System.out.println(e.getMessage()); 
         }

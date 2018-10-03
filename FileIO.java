@@ -30,7 +30,40 @@ import javax.swing.JLabel;
 
 public class FileIO
 {
+	private FileReader fileReader;
+	BufferedReader bufferedReader;
+	String line = null;
 
+	public FileIO(String fileName)
+	{
+		 try {
+
+            fileReader = new FileReader(fileName);
+			bufferedReader = new BufferedReader(fileReader);
+			line = bufferedReader.readLine();
+		}
+		catch(FileNotFoundException ex) { System.out.println("Unable to open file '" + fileName + "'"); }  
+		catch (IOException e) { line = null;}
+	}
+
+	public boolean isEmpty() { return (line == null);}
+	public String getLine()
+	{
+		String currLine = line;
+		try{
+		line =  bufferedReader.readLine();
+		}catch (Exception e) { line = null;}
+
+		return currLine;
+	}
+	public void close()
+	{
+		try{
+			 bufferedReader.close();
+		} catch (Exception e) {}
+	}
+
+	/**Static functions****/
     public static Mat readImage(String location)
 	{
 		Mat img = Imgcodecs.imread(location);
